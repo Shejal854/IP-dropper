@@ -1,11 +1,9 @@
-/* ── Layout ────────────────────────────────────────────────────────────────── */
 .app {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
 }
 
-/* ── Onboarding Screen ─────────────────────────────────────────────────────── */
 .onboard-wrapper {
   flex: 1;
   display: flex;
@@ -60,7 +58,6 @@
   gap: 6px;
 }
 
-/* ── Header ────────────────────────────────────────────────────────────────── */
 .header {
   display: flex;
   align-items: center;
@@ -88,7 +85,6 @@
   color: var(--text-secondary);
 }
 
-/* ── Main Grid ─────────────────────────────────────────────────────────────── */
 .main-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -104,7 +100,6 @@
   .main-grid { grid-template-columns: 1fr; }
 }
 
-/* ── Panel ─────────────────────────────────────────────────────────────────── */
 .panel {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -123,7 +118,6 @@
   color: var(--text-secondary);
 }
 
-/* ── Shared Atoms ──────────────────────────────────────────────────────────── */
 .status-dot {
   width: 7px;
   height: 7px;
@@ -139,7 +133,6 @@
   line-height: 1;
 }
 
-/* ── Buttons ───────────────────────────────────────────────────────────────── */
 .btn {
   border-radius: var(--radius-md);
   font-size: 14px;
@@ -158,7 +151,6 @@
 .btn--primary:hover:not(:disabled) { opacity: 0.88; }
 .btn--primary:disabled { opacity: 0.35; cursor: default; }
 
-/* ── Text Input ────────────────────────────────────────────────────────────── */
 .text-input {
   flex: 1;
   background: var(--surface-2);
@@ -173,7 +165,6 @@
 .text-input:focus { border-color: var(--accent); }
 .text-input::placeholder { color: var(--text-hint); }
 
-/* ── Empty State ───────────────────────────────────────────────────────────── */
 .empty-state {
   color: var(--text-secondary);
   font-size: 13px;

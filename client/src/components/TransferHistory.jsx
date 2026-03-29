@@ -1,13 +1,6 @@
 import { formatBytes, formatTime } from '../utils/format';
 import styles from './TransferHistory.module.css';
 
-/**
- * TransferHistory
- *
- * Renders a reverse-chronological log of completed file transfers.
- *
- * @param {{ direction, fileName, fileSize, peerName, timestamp }[]} history
- */
 export default function TransferHistory({ history }) {
   if (history.length === 0) {
     return (

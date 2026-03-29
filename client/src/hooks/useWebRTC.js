@@ -1,28 +1,12 @@
 import { useRef, useState, useCallback } from 'react';
 import { WEBRTC_CONFIG, TRANSFER } from '../config';
 
-/**
- * useWebRTC
- *
- * Manages all WebRTC peer connections and file transfer logic.
- *
- * Responsibilities:
- *  - Creating and tracking RTCPeerConnection instances per peer
- *  - Sending files in chunks over RTCDataChannel
- *  - Receiving and reassembling incoming file chunks
- *  - Reporting live transfer progress per peer
- *
- * @param {import('socket.io-client').Socket} socket
- * @param {(entry: object) => void} addToHistory
- */
 export function useWebRTC(socket, addToHistory) {
-  const peerConnections = useRef({});  // peerId → RTCPeerConnection
-  const dataChannels    = useRef({});  // peerId → RTCDataChannel
-  const incomingFiles   = useRef({});  // peerId → { meta, receivedChunks, receivedSize }
+  const peerConnections = useRef({});  
+  const dataChannels    = useRef({});  
+  const incomingFiles   = useRef({});  
 
-  const [transfers, setTransfers] = useState({}); // peerId → { status, progress }
-
-  // ── Internal Helpers ────────────────────────────────────────────────────────
+  const [transfers, setTransfers] = useState({}); 
 
   const updateTransfer = useCallback((peerId, patch) => {
     setTransfers((prev) => ({
@@ -39,28 +23,23 @@ export function useWebRTC(socket, addToHistory) {
     const pc = new RTCPeerConnection(WEBRTC_CONFIG);
     peerConnections.current[peerId] = pc;
 
-    // Relay discovered ICE candidates to the remote peer via signaling server
     pc.onicecandidate = ({ candidate }) => {
       if (candidate) {
         socket.emit('ice-candidate', { targetId: peerId, candidate });
       }
     };
 
-    // When the remote peer opens a data channel toward us (they are the initiator)
     pc.ondatachannel = ({ channel }) => {
       setupReceiveChannel(channel, peerId);
     };
 
     return pc;
-  }, [socket]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Receive Side ────────────────────────────────────────────────────────────
+  }, [socket]); 
 
   const finalizeReceive = useCallback((peerId) => {
     const state = incomingFiles.current[peerId];
     if (!state) return;
 
-    // Reassemble chunks into a Blob and trigger browser download
     const blob = new Blob(state.receivedChunks, { type: state.meta.type });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
@@ -90,13 +69,11 @@ export function useWebRTC(socket, addToHistory) {
     };
 
     channel.onmessage = ({ data }) => {
-      // String messages are control signals
       if (typeof data === 'string') {
         if (data === 'done') finalizeReceive(peerId);
         return;
       }
 
-      // Binary data — accumulate chunk
       const state = incomingFiles.current[peerId];
       if (!state) return;
 
@@ -109,8 +86,6 @@ export function useWebRTC(socket, addToHistory) {
       });
     };
   }, [finalizeReceive, updateTransfer]);
-
-  // ── Signaling Handlers (called by App via socket events) ────────────────────
 
   const handleOffer = useCallback(async ({ fromId, offer }) => {
     const pc = createPeerConnection(fromId);
@@ -139,15 +114,12 @@ export function useWebRTC(socket, addToHistory) {
     updateTransfer(fromId, { status: 'waiting', progress: 0 });
   }, [updateTransfer]);
 
-  // ── Send Side ───────────────────────────────────────────────────────────────
-
   const sendFile = useCallback(async (file, targetId, targetName) => {
     const pc      = createPeerConnection(targetId);
     const channel = pc.createDataChannel('fileTransfer');
     channel.binaryType = 'arraybuffer';
     dataChannels.current[targetId] = channel;
 
-    // Notify receiver of incoming file metadata via signaling server
     socket.emit('file-meta', {
       targetId,
       meta: { name: file.name, size: file.size, type: file.type },
@@ -160,7 +132,6 @@ export function useWebRTC(socket, addToHistory) {
       let offset = 0;
 
       while (offset < buffer.byteLength) {
-        // Back-pressure: wait if the send buffer is too full
         if (channel.bufferedAmount > TRANSFER.BUFFER_THRESHOLD) {
           await new Promise((resolve) => setTimeout(resolve, 50));
         }
@@ -174,7 +145,6 @@ export function useWebRTC(socket, addToHistory) {
         });
       }
 
-      // Signal transfer completion
       channel.send('done');
 
       addToHistory({
@@ -188,7 +158,6 @@ export function useWebRTC(socket, addToHistory) {
       updateTransfer(targetId, { status: 'done', progress: 100 });
     };
 
-    // Initiate WebRTC handshake
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     socket.emit('offer', { targetId, offer });

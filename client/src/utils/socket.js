@@ -1,11 +1,6 @@
 import { io } from 'socket.io-client';
 import { SERVER_URL } from '../config';
 
-/**
- * Singleton socket instance.
- * Ensures only one connection is created regardless of how many
- * components call getSocket().
- */
 let socket = null;
 
 export function getSocket() {

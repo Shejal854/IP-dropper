@@ -1,16 +1,5 @@
 import styles from './DeviceList.module.css';
 
-/**
- * DeviceList
- *
- * Displays all online peers. Clicking a device selects it as the transfer target.
- * Shows a live progress bar when a transfer is active with that peer.
- *
- * @param {{ id, name }[]}  devices
- * @param {{ id, name }|null} selectedPeer
- * @param {(device: object) => void} onSelect
- * @param {Record<string, { status: string, progress: number }>} transfers
- */
 export default function DeviceList({ devices, selectedPeer, onSelect, transfers }) {
   if (devices.length === 0) {
     return (

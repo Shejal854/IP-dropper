@@ -9,17 +9,6 @@ import { useState } from 'react';
 import './styles/global.css';
 import './styles/components.css';
 
-/**
- * App
- *
- * Root component. Wires together:
- *  - SocketContext (connection status)
- *  - useDevices (registration + peer list)
- *  - useWebRTC (signaling + file transfer)
- *  - useTransferHistory (session log)
- *
- * Renders either the onboarding screen or the main transfer UI.
- */
 export default function App() {
   const { socket, connected } = useSocket();
   const { myDevice, peers, register, isRegistered } = useDevices();
@@ -37,7 +26,6 @@ export default function App() {
     handleFileMeta,
   } = useWebRTC(socket, addToHistory);
 
-  // Attach WebRTC signaling listeners
   useEffect(() => {
     socket.on('offer',         handleOffer);
     socket.on('answer',        handleAnswer);
@@ -59,7 +47,6 @@ export default function App() {
     sendFile(file, selectedPeer.id, selectedPeer.name);
   };
 
-  // ── Onboarding ──────────────────────────────────────────────────────────────
   if (!isRegistered) {
     return (
       <div className="app">
@@ -101,7 +88,6 @@ export default function App() {
     );
   }
 
-  // ── Main UI ─────────────────────────────────────────────────────────────────
   return (
     <div className="app">
       <header className="header">

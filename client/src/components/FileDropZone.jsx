@@ -1,15 +1,6 @@
 import { useState, useRef } from 'react';
 import styles from './FileDropZone.module.css';
 
-/**
- * FileDropZone
- *
- * Accepts a file via drag-and-drop or click-to-browse.
- * Calls onFileDrop with the selected File object.
- *
- * @param {boolean} disabled  - True when no peer is selected
- * @param {(file: File) => void} onFileDrop
- */
 export default function FileDropZone({ disabled, onFileDrop }) {
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef(null);
@@ -36,7 +27,7 @@ export default function FileDropZone({ disabled, onFileDrop }) {
   const handleInputChange = (e) => {
     const file = e.target.files[0];
     if (file) onFileDrop(file);
-    e.target.value = ''; // reset so same file can be re-selected
+    e.target.value = ''; 
   };
 
   const zoneClass = [

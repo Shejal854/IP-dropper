@@ -1,10 +1,3 @@
-/**
- * In-memory store for currently connected devices.
- * Keyed by socket.id → { id, name, joinedAt }
- *
- * Intentionally not persisted — device presence is ephemeral.
- * When a device disconnects, it is immediately removed.
- */
 const devices = new Map();
 
 const deviceStore = {
