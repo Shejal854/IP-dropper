@@ -2,11 +2,11 @@ import { useRef, useState, useCallback } from 'react';
 import { WEBRTC_CONFIG, TRANSFER } from '../config';
 
 export function useWebRTC(socket, addToHistory) {
-  const peerConnections = useRef({});  
-  const dataChannels    = useRef({});  
-  const incomingFiles   = useRef({});  
+  const peerConnections = useRef({});
+  const dataChannels    = useRef({});
+  const incomingFiles   = useRef({});
 
-  const [transfers, setTransfers] = useState({}); 
+  const [transfers, setTransfers] = useState({});
 
   const updateTransfer = useCallback((peerId, patch) => {
     setTransfers((prev) => ({
@@ -14,6 +14,14 @@ export function useWebRTC(socket, addToHistory) {
       [peerId]: { ...prev[peerId], ...patch },
     }));
   }, []);
+
+  const readSlice = (file, offset, chunkSize) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();           
+      reader.onload  = (e) => resolve(e.target.result);
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file.slice(offset, offset + chunkSize));
+    });
 
   const createPeerConnection = useCallback((peerId) => {
     if (peerConnections.current[peerId]) {
@@ -29,12 +37,21 @@ export function useWebRTC(socket, addToHistory) {
       }
     };
 
+    pc.oniceconnectionstatechange = () => {
+      const s = pc.iceConnectionState;
+      if (s === 'failed' || s === 'disconnected') {
+        console.error(`[WebRTC] ICE ${s} for peer ${peerId}. ` +
+          'Check STUN config or router AP-isolation settings.');
+        updateTransfer(peerId, { status: 'error', progress: 0 });
+      }
+    };
+
     pc.ondatachannel = ({ channel }) => {
       setupReceiveChannel(channel, peerId);
     };
 
     return pc;
-  }, [socket]); 
+  }, [socket, updateTransfer]);   
 
   const finalizeReceive = useCallback((peerId) => {
     const state = incomingFiles.current[peerId];
@@ -120,28 +137,30 @@ export function useWebRTC(socket, addToHistory) {
     channel.binaryType = 'arraybuffer';
     dataChannels.current[targetId] = channel;
 
-    socket.emit('file-meta', {
-      targetId,
-      meta: { name: file.name, size: file.size, type: file.type },
-    });
-
     channel.onopen = async () => {
-      updateTransfer(targetId, { status: 'sending', progress: 0 });
+      socket.emit('file-meta', {
+        targetId,
+        meta: { name: file.name, size: file.size, type: file.type },
+      });
 
-      const buffer = await file.arrayBuffer();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      updateTransfer(targetId, { status: 'sending', progress: 0 });
+      const CHUNK_SIZE = TRANSFER.CHUNK_SIZE ?? 16 * 1024;
       let offset = 0;
 
-      while (offset < buffer.byteLength) {
-        if (channel.bufferedAmount > TRANSFER.BUFFER_THRESHOLD) {
-          await new Promise((resolve) => setTimeout(resolve, 50));
+      while (offset < file.size) {
+        while (channel.bufferedAmount > (TRANSFER.BUFFER_THRESHOLD ?? 65536)) {
+          await new Promise((r) => setTimeout(r, 50));
         }
 
-        const chunk = buffer.slice(offset, offset + TRANSFER.CHUNK_SIZE);
+        const chunk = await readSlice(file, offset, CHUNK_SIZE);
         channel.send(chunk);
         offset += chunk.byteLength;
 
         updateTransfer(targetId, {
-          progress: Math.round((offset / buffer.byteLength) * 100),
+          status:   'sending',
+          progress: Math.round((offset / file.size) * 100),
         });
       }
 
@@ -161,6 +180,7 @@ export function useWebRTC(socket, addToHistory) {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     socket.emit('offer', { targetId, offer });
+
   }, [createPeerConnection, socket, updateTransfer, addToHistory]);
 
   return {
